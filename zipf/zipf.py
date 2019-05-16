@@ -2,10 +2,7 @@ import sys
 import os
 import subprocess
 import shutil
-import ntpath
-from os import stat
 from subprocess import call
-from pwd import getpwuid
 from datetime import datetime
 
 CBRED = '\033[38;5;196;1m'
@@ -21,10 +18,10 @@ CBASE = '\033[0m'
 
 def check_help_request(args):
     if len(args) == 1 and (args[0] == "-h" or args[0] == "--help"):
-        README_path = "/usr/lib/trashf/README.md"
+        README_path = "/usr/lib/zipf/README.md"
 
         f = open(README_path, 'r')
-        print(CBBLUE + "\n\t#######      trashf documentation      #######\n" + CBWHITE)
+        print(CBBLUE + "\n\t#######      zipf documentation      #######\n" + CBWHITE)
 
         for line in f:
             if line == "```sh\n" or line == "```\n" or line == "<pre>\n" or line == "</pre>\n":
@@ -68,11 +65,6 @@ def get_abs_path(fpath):
     return os.path.normpath((os.path.join(os.getcwd(), os.path.expanduser(fpath))))
 
 
-# def get_fname(fpath):
-#     head, tail = ntpath.split(fpath)
-#     return tail or ntpath.basename(head)
-
-
 def error_man(init_msg, err_msg, folder_path, moved_folder_path):
     ERROR(init_msg + " error:\n\t\t" + str(err_msg))
 
@@ -88,9 +80,19 @@ def check_f_moved(folder_path, moved_folder_path):
         if os.path.exists(folder_path):
             WARNING(CBBLUE + "%s" % folder_path + CBASE + " still exists")
         if not os.path.exists(moved_folder_path):
-            WARNING(CBBLUE + "%s" % moved_folder_path + CBASE + " not in trash")
+            WARNING(CBBLUE + "%s" % moved_folder_path + CBASE + " doesn't exist")
         return False
     return True
+
+
+def check_archive_created(archive_name):
+    archive_path = os.getcwd() + "/" + archive_name + ".zip"
+    if os.path.isfile(archive_path):
+        OK(CBBLUE + "%s" % archive_path + CBASE + " created")
+        return True
+    else:
+        ERROR(CBBLUE + "%s" % archive_path + CBASE + " not created")
+        return False
 
 
 def zip_folder(folder_path, archive_name=None):
@@ -100,6 +102,8 @@ def zip_folder(folder_path, archive_name=None):
         archive_name = cdatetime.strftime("%Y_%m_%d-%H_%M_%S")
 
     shutil.make_archive(archive_name, 'zip', folder_path)
+    check_archive_created(archive_name)
+    shutil.rmtree(folder_path)
 
 
 def zip_files(flist, archive_name=None):
@@ -142,15 +146,15 @@ def zip_files(flist, archive_name=None):
 
     for f in flist:
         fpath = get_abs_path(f)
-        # fname = get_fname(fpath)
 
         if os.path.isdir(fpath):
             call(['cp', '-a', fpath, folder_path])
         elif os.path.isfile(fpath):
-            # shutil.copy(fpath, folder_path + "/" + fname)
             shutil.copy(fpath, folder_path)
 
     shutil.make_archive(archive_name, 'zip', folder_path)
+    check_archive_created(archive_name)
+    shutil.rmtree(folder_path)
 
 
 def main():
@@ -172,6 +176,12 @@ def main():
         else:
             ERROR(CBBLUE + "%s" % fpath + CBASE + " path doesn't exist")
             raise ValueError("needs at least one existing path in argument being a folder name or a list of files/folders")
+
+    elif len(inputs) == 2 and not path_exists(get_abs_path(inputs[1])) and os.path.isdir(get_abs_path(inputs[0])):
+        folder_path = get_abs_path(inputs[0])
+        archive_name = inputs[1]
+        zip_folder(folder_path, archive_name)
+
     else:
         last_arg = inputs[-1]
         if path_exists(get_abs_path(last_arg)):
