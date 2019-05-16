@@ -103,7 +103,7 @@ def zip_folder(folder_path, archive_name=None):
 
     shutil.make_archive(archive_name, 'zip', folder_path)
     check_archive_created(archive_name)
-    shutil.rmtree(folder_path)
+    # shutil.rmtree(folder_path)
 
 
 def zip_files(flist, archive_name=None):
